@@ -22,7 +22,7 @@ func InitService() {
 	mapstore = make(map[string]string)
 
 	vcfilters := make(map[string][]*modules.VCFilter)
-	vcfilters["0"] = []*modules.VCFilter{
+	vcfilters[modules.ACTION_REGISTER] = []*modules.VCFilter{
 		{Type: "EmailCredential", Required: true, TrustRoots: []string{"did:ont:ssssss"}},
 	}
 	conf := &ontloginsdk.SDKConfig{
