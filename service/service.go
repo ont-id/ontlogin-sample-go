@@ -38,8 +38,8 @@ func InitService() {
 		VCFilters: vcfilters,
 	}
 
-	resolvers := make(map[string]did.DidResolver)
-	ontresolver, err := ont.NewOntResolver(false, "http://polaris2.ont.io:20336", "52df370680de17bc5d4262c446f102a0ee0d6312", "./wallet.dat", "123456")
+	resolvers := make(map[string]did.DidProcessor)
+	ontresolver, err := ont.NewOntProcessor(false, "http://polaris2.ont.io:20336", "52df370680de17bc5d4262c446f102a0ee0d6312", "./wallet.dat", "123456")
 	if err != nil {
 		panic(err)
 	}
