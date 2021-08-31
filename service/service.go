@@ -3,11 +3,12 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/ontology-tech/ontlogin-sdk-go/did"
 	"github.com/ontology-tech/ontlogin-sdk-go/did/ont"
 	"github.com/ontology-tech/ontlogin-sdk-go/modules"
 	ontloginsdk "github.com/ontology-tech/ontlogin-sdk-go/sdk"
-	"net/http"
 
 	"github.com/google/uuid"
 
@@ -16,17 +17,17 @@ import (
 )
 
 var loginsdk *ontloginsdk.OntLoginSdk
-var mapstore map[string]string
+var mapstore map[string]int
 
 func InitService() {
-	mapstore = make(map[string]string)
+	mapstore = make(map[string]int)
 
-	vcfilters := make(map[string][]*modules.VCFilter)
-	vcfilters[modules.ACTION_REGISTER] = []*modules.VCFilter{
-		{Type: "EmailCredential", Required: true, TrustRoots: []string{"did:ont:ssssss"}},
+	vcfilters := make(map[int][]*modules.VCFilter)
+	vcfilters[modules.ACTION_AUTHORIZATION] = []*modules.VCFilter{
+		{Type: "EmailCredential", Required: true, TrustRoots: []string{"did:ont:testdid"}},
 	}
 	conf := &ontloginsdk.SDKConfig{
-		Chain: []string{"ont"},
+		Chain: []string{"ONT"},
 		Alg:   []string{"ES256"},
 		ServerInfo: &modules.ServerInfo{
 			Name:               "testServcer",
@@ -55,14 +56,12 @@ func RequestChallenge(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(request.Body).Decode(&cr)
 	if err != nil {
-		fmt.Printf("err:%s\n", err.Error())
 		writer.Write([]byte(err.Error()))
 		return
 	}
 
 	serverHello, err := loginsdk.GenerateChallenge(cr)
 	if err != nil {
-		fmt.Printf("err:%s\n", err.Error())
 		writer.Write([]byte(err.Error()))
 		return
 	}
@@ -80,14 +79,12 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	err := json.NewDecoder(request.Body).Decode(&lr)
 
 	if err != nil {
-		fmt.Printf("err:%s\n", err.Error())
 		writer.Write([]byte(err.Error()))
 		return
 	}
 
 	err = loginsdk.ValidateClientResponse(lr)
 	if err != nil {
-		fmt.Printf("err:%s\n", err.Error())
 		writer.Write([]byte(err.Error()))
 		return
 	}
@@ -99,28 +96,26 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 }
 
 func AfterLogin(writer http.ResponseWriter, request *http.Request) {
-	fmt.Println("===AfterLogin")
 	if err := auth.CheckLogin(request.Context()); err != nil {
-		fmt.Printf("err:%s\n", err.Error())
 		writer.Write([]byte("please login first"))
 		return
 	}
 	writer.Write([]byte("normal business process"))
 }
 
-func GenUUID() string {
+func GenUUID(action int) string {
 	uuid, err := uuid.NewUUID()
 	if err != nil {
-		fmt.Printf("uuid failed:%s\n", err.Error())
 		return ""
 	}
-	mapstore[uuid.String()] = "ok"
+	mapstore[uuid.String()] = action
 	return uuid.String()
 }
 
-func CheckNonce(nonce string) error {
-	//if _,ok:=mapstore[nonce];!ok{
-	//	return fmt.Errorf("no nonce found")
-	//}
-	return nil
+func CheckNonce(nonce string) (int, error) {
+	action, ok := mapstore[nonce]
+	if !ok {
+		return -1, fmt.Errorf("no nonce found")
+	}
+	return action, nil
 }
